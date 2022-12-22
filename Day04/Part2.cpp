@@ -39,9 +39,9 @@ main(int argv, char *argc[])
 		const auto sectionPairs = CollectSectionPairs(input);
 		std::cout << "Total section pair overlaps: "
 				  << CountSectionPairOverlaps(sectionPairs) << '\n';
-		//const auto pair = TranslateSectionPair("2-8,3-7");
-		//std::cout << pair.second.second << '\n';
-		//std::cout << std::boolalpha << DoesSectionPairOverlap(pair, false) << '\n';
+		const auto pair = TranslateSectionPair("2-8,3-7");
+		std::cout << pair.second.second << '\n';
+		std::cout << std::boolalpha << DoesSectionPairOverlap(pair, false) << '\n';
 		return 0;
 	}
 	catch (const std::exception &except) {
@@ -122,8 +122,8 @@ CountSectionPairOverlaps(const SectionPairVector &pairs)
 {
 	int overlapTotal{ 0 };
 	for (const auto &pair : pairs) {
-		// Fully-contained overlap.
-		if (DoesSectionPairOverlap(pair, true))
+		// Non-fully-contained overlap.
+		if (DoesSectionPairOverlap(pair, false))
 			overlapTotal += 1;
 	}
 	return overlapTotal;
