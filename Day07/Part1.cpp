@@ -16,16 +16,32 @@
 #include <memory>
 #include <regex>
 #include <type_traits>
+#include <variant>
+#include <unordered_map>
 
-class FileSystem
-{
-public:
-	
-private:
-	
+struct File;
+struct Directory;
+// File system element.
+using FSElement = std::variant<File, Directory>;
+using DirectoryUMap = std::unordered_map<std::string, FSElement>;
+
+struct Directory
+{   /**
+	 ** Each directory has its own DirectoryMap.
+	 **/
+    DirectoryUMap contents;
 };
 
-//CrateStackVector CollectStacks(std::ifstream &input);
+struct File
+{
+	std::size_t size;
+};
+
+void ProcessShellCommand(std::string_view command,
+						 std::string_view argument,
+						 const std::vector<std::string> &commandOutput,
+						 DirectoryUMap &rootDirectory);
+DirectoryUMap ProcessShellSession(std::ifstream &input);
 
 int
 main(int argv, char *argc[])
@@ -35,23 +51,7 @@ main(int argv, char *argc[])
 		if (!input.is_open())
 			throw std::runtime_error("Input file not found!");
 
-		std::string str{};
-		std::getline(input, str);
-		int numProcessed{ 13 };
-		for (auto iter = str.begin() + 13; iter != str.end(); ++iter) {
-			numProcessed += 1;
-			std::string unsorted;
-			std::string temp = unsorted = std::string(iter - 13, iter + 1);
-			std::ranges::sort(temp);
-			const auto resultIter = std::ranges::adjacent_find(temp);
-			if (resultIter != temp.end())
-				continue; // Duplicate characters.
-			else {
-				std::cout << unsorted << ' ' << numProcessed  << '\n';
-				break;
-			}
-		}
-		//auto stacks = CollectStacks(input);
+		auto rootDirectory = ProcessShellSession(input);
 		return 0;
 	}
 	catch (const std::exception &except) {
@@ -59,12 +59,54 @@ main(int argv, char *argc[])
 	}
 }
 
-/*CrateStackVector
-CollectStacks(std::ifstream &input)
+void
+ProcessShellCommand(std::string_view command, std::string_view argument,
+					const std::vector<std::string> &commandOutput,
+					DirectoryUMap &rootDirectory)
 {
-	decltype(CollectStacks(input)) results{};
-	std::string line;
-	for (; !isDone && std::getline(input, line); ) {
+	if (command == "cd") {
+		std::cout << command << ' ' << argument << '\n';
+		if (argument == "/") {
+
+		}
+		else if (argument == "..") {
+
+		}
+		else {
+
+		}
 	}
-	return results;
-}*/
+	else if (command == "ls") {
+		std::cout << command << '\n';
+		for (auto line : commandOutput) {
+			std::cout << line << '\n';
+		}
+	}
+	else
+		throw std::runtime_error("Unrecognized command!");
+}
+
+DirectoryUMap
+ProcessShellSession(std::ifstream &input)
+{
+	decltype(ProcessShellSession(input)) rootDirectory;
+	std::string command, argument;
+	std::vector<std::string> commandOutput;
+	for (std::string line; std::getline(input, line); ) {
+		// Currently not getting the last lines of output
+		{
+			std::string::size_type position{};
+			if ((position = line.find_first_of('$')) != std::string::npos) {
+				if (!command.empty()) {
+					ProcessShellCommand(command, argument, commandOutput, rootDirectory);
+				}
+				commandOutput.clear();
+				std::istringstream iss(line.substr(position + 2));
+				iss >> command >> argument;
+			} else {
+				commandOutput.push_back(line);
+			}
+		}
+	}
+	return rootDirectory;
+}
